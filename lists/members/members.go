@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"errors"
 
-	mailchimp "github.com/beeker1121/mailchimp-go"
-	"github.com/beeker1121/mailchimp-go/query"
+	mailchimp "github.com/etiennel/mailchimp-go"
+	"github.com/etiennel/mailchimp-go/query"
 )
 
 // EmailType defines the type of email a member asked to get.
@@ -374,6 +375,36 @@ func GetMember(listID, hash string, params *GetMemberParams) (*Member, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+
+// SearchMemberByEmail searches a user by email in a list
+func SearchMemberByEmail(email string) (map[string]interface{}, error) {
+	res := map[string]interface{}{}
+	path := fmt.Sprintf("search-members?query=%s", email)
+
+	if err := mailchimp.Call("GET", path, nil, nil, &res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+
+//Get MemberID. If not found returns empty string
+func GetMemberIDByEmail(email string) (string, error) {
+
+	res, err := SearchMemberByEmail("aa@ap.pl")
+	if err != nil {
+		return "", err
+	}
+	exactMembers := res["exact_matches"].(map[string]interface{})["members"].([]interface{})
+	for _, exactMember := range exactMembers {
+		memberMap := exactMember.(map[string]interface{})
+		return memberMap["id"].(string), nil
+	}
+
+	return "", errors.New("not found")
+
 }
 
 // Update updates a list member.
